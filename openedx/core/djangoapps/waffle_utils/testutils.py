@@ -2,68 +2,13 @@
 Test utilities for waffle utilities.
 """
 
-from waffle.testutils import override_flag, override_switch
+from waffle.testutils import override_flag
 
 # Can be used with FilteredQueryCountMixin.assertNumQueries() to blacklist
 # waffle tables. For example:
 #   QUERY_COUNT_TABLE_BLACKLIST = WAFFLE_TABLES
 #   with self.assertNumQueries(6, table_blacklist=QUERY_COUNT_TABLE_BLACKLIST):
 WAFFLE_TABLES = ['waffle_utils_waffleflagcourseoverridemodel', 'waffle_flag', 'waffle_switch', 'waffle_sample']
-
-
-class override_waffle_switch(override_switch):
-    """
-    override_waffle_switch is a contextmanager for easier testing of switches.
-
-    It accepts two parameters, the switch itself and its intended state. Example
-    usage::
-
-        with override_waffle_switch(UNIFIED_COURSE_TAB_SWITCH, active=True):
-            ...
-
-    If the switch already exists, its value will be changed inside the context
-    block, then restored to the original value. If the switch does not exist
-    before entering the context, it is created, then removed at the end of the
-    block.
-
-    It can also act as a decorator::
-
-        @override_waffle_switch(UNIFIED_COURSE_TAB_SWITCH, active=True)
-        def test_happy_mode_enabled():
-            ...
-    """
-    _cached_value = None
-
-    def __init__(self, switch, active):
-        """
-
-        Args:
-             switch (WaffleSwitch): The namespaced cached waffle switch.
-             active (Boolean): The value to which the switch will be set.
-        """
-        self.switch = switch
-        waffle_namespace = switch.waffle_namespace
-        name = waffle_namespace._namespaced_name(switch.switch_name)  # pylint: disable=protected-access
-        super(override_waffle_switch, self).__init__(name, active)
-
-    def __enter__(self):
-        super(override_waffle_switch, self).__enter__()
-
-        # pylint: disable=protected-access
-        # Store values that have been cached on the switch
-        self._cached_value = self.switch.waffle_namespace._cached_switches.get(self.name)
-        self.switch.waffle_namespace._cached_switches[self.name] = self.active
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        super(override_waffle_switch, self).__exit__(exc_type, exc_val, exc_tb)
-
-        # pylint: disable=protected-access
-        # Restore the cached values
-        waffle_namespace = self.switch.waffle_namespace
-        waffle_namespace._cached_switches.pop(self.name, None)
-
-        if self._cached_value is not None:
-            waffle_namespace._cached_switches[self.name] = self._cached_value
 
 
 class override_waffle_flag(override_flag):

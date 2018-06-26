@@ -16,7 +16,6 @@ from organizations.tests.factories import OrganizationFactory
 
 from openedx.core.djangoapps.oauth_dispatch.adapters import DOTAdapter
 from openedx.core.djangoapps.oauth_dispatch.toggles import ENFORCE_JWT_SCOPES
-from openedx.core.djangoapps.waffle_utils.testutils import override_waffle_switch
 from provider import constants
 from student.tests.factories import UserFactory
 from third_party_auth.tests.utils import ThirdPartyOAuthTestMixin, ThirdPartyOAuthTestMixinGoogle
@@ -186,7 +185,7 @@ class TestAccessTokenView(AccessTokenLoginMixin, mixins.AccessTokenMixin, _Dispa
     )
     @ddt.unpack
     def test_restricted_access_token_fields(self, enforce_jwt_scopes_enabled, expiration_expected):
-        with override_waffle_switch(ENFORCE_JWT_SCOPES, active=enforce_jwt_scopes_enabled):
+        with ENFORCE_JWT_SCOPES.override(enforce_jwt_scopes_enabled):
             response = self._post_request(self.user, self.restricted_dot_app)
             self.assertEqual(response.status_code, 200)
             data = json.loads(response.content)
@@ -214,17 +213,17 @@ class TestAccessTokenView(AccessTokenLoginMixin, mixins.AccessTokenMixin, _Dispa
         self.assert_valid_jwt_access_token(data['access_token'], self.user, data['scope'].split(' '))
 
     @ddt.data(
-        (False, True),
-        (True, False),
+        (False, True, settings.DEFAULT_JWT_ISSUER),
+        (True, False, settings.RESTRICTED_APPLICATION_JWT_ISSUER),
     )
     @ddt.unpack
-    def test_restricted_jwt_access_token(self, enforce_jwt_scopes_enabled, expiration_expected):
+    def test_restricted_jwt_access_token(self, enforce_jwt_scopes_enabled, expiration_expected, jwt_issuer):
         """
         Verify that when requesting a JWT token from a restricted Application
         within the DOT subsystem, that our claims is marked as already expired
         (i.e. expiry set to Jan 1, 1970)
         """
-        with override_waffle_switch(ENFORCE_JWT_SCOPES, active=enforce_jwt_scopes_enabled):
+        with ENFORCE_JWT_SCOPES.override(enforce_jwt_scopes_enabled):
             response = self._post_request(self.user, self.restricted_dot_app, token_type='jwt')
             self.assertEqual(response.status_code, 200)
             data = json.loads(response.content)
@@ -237,6 +236,7 @@ class TestAccessTokenView(AccessTokenLoginMixin, mixins.AccessTokenMixin, _Dispa
                 self.user,
                 data['scope'].split(' '),
                 should_be_expired=expiration_expected,
+                jwt_issuer=jwt_issuer,
             )
 
     def test_restricted_access_token(self):

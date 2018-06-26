@@ -3201,7 +3201,7 @@ DEFAULT_JWT_ISSUER = {
 RESTRICTED_APPLICATION_JWT_ISSUER = {
     'ISSUER': 'change-me',
     'SECRET_KEY': SECRET_KEY,
-    'AUDIENCE': None,
+    'AUDIENCE': 'change-me',
 }
 
 JWT_AUTH = {
