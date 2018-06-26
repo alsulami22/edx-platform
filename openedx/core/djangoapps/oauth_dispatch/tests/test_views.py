@@ -120,7 +120,7 @@ class _DispatchingViewTestCase(TestCase):
 
     def _post_request(self, user, client, token_type=None, scope=None):
         """
-        Call the view with a POST request objectwith the appropriate format,
+        Call the view with a POST request object with the appropriate format,
         returning the response object.
         """
         return self.client.post(self.url, self._post_body(user, client, token_type, scope))  # pylint: disable=no-member
@@ -147,12 +147,17 @@ class TestAccessTokenView(AccessTokenLoginMixin, mixins.AccessTokenMixin, _Dispa
         """
         Return a dictionary to be used as the body of the POST request
         """
+        grant_type = getattr(client, 'authorization_grant_type', dot_models.Application.GRANT_PASSWORD)
         body = {
             'client_id': client.client_id,
-            'grant_type': 'password',
-            'username': user.username,
-            'password': 'test',
+            'grant_type': grant_type.replace('-', '_'),
         }
+
+        if grant_type == dot_models.Application.GRANT_PASSWORD:
+            body['username'] = user.username
+            body['password'] = 'test'
+        else:
+            body['client_secret'] = client.client_secret
 
         if token_type:
             body['token_type'] = token_type
@@ -252,19 +257,38 @@ class TestAccessTokenView(AccessTokenLoginMixin, mixins.AccessTokenMixin, _Dispa
         data = json.loads(response.content)
         self.assertNotIn('refresh_token', data)
 
-    def test_jwt_access_token_scopes_and_filters(self):
+    @ddt.data(dot_models.Application.GRANT_CLIENT_CREDENTIALS, dot_models.Application.GRANT_PASSWORD)
+    def test_jwt_access_token_scopes_and_filters(self, grant_type):
         """
         Verify the JWT contains the expected scopes and filters.
         """
-        scopes = self.dot_app_access.scopes
-        response = self._post_request(self.user, self.dot_app, token_type='jwt', scope=scopes)
+        dot_app = self.dot_adapter.create_public_client(
+            name='test dot application',
+            user=self.user,
+            redirect_uri=DUMMY_REDIRECT_URL,
+            client_id='dot-app-client-id-{grant_type}'.format(grant_type=grant_type),
+            grant_type=grant_type,
+        )
+        dot_app_access = models.ApplicationAccess.objects.create(
+            application=dot_app,
+            scopes=['grades:read'],
+        )
+        dot_app_org = models.ApplicationOrganization.objects.create(
+            application=dot_app,
+            organization=OrganizationFactory()
+        )
+        scopes = dot_app_access.scopes
+        filters = [dot_app_org.to_jwt_filter_claim()]
+        if grant_type != dot_models.Application.GRANT_CLIENT_CREDENTIALS:
+            filters.append(DOTAdapter.FILTER_USER_ME)
+        response = self._post_request(self.user, dot_app, token_type='jwt', scope=scopes)
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assert_valid_jwt_access_token(
             data['access_token'],
             self.user,
             scopes,
-            filters=[DOTAdapter.FILTER_USER_ME, self.dot_app_org.to_jwt_filter_claim()]
+            filters=filters,
         )
 
 

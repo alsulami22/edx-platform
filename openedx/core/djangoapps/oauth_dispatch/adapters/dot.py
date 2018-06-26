@@ -33,7 +33,8 @@ class DOTAdapter(object):
             redirect_uris=redirect_uri,
         )
 
-    def create_public_client(self, name, user, redirect_uri, client_id=None):
+    def create_public_client(self, name, user, redirect_uri, client_id=None,
+                             grant_type=models.Application.GRANT_PASSWORD):
         """
         Create an oauth client application that is public.
         """
@@ -42,7 +43,7 @@ class DOTAdapter(object):
             user=user,
             client_id=client_id,
             client_type=models.Application.CLIENT_PUBLIC,
-            authorization_grant_type=models.Application.GRANT_PASSWORD,
+            authorization_grant_type=grant_type,
             redirect_uris=redirect_uri,
         )
 
