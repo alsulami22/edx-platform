@@ -140,6 +140,14 @@ class AccessTokenView(RatelimitMixin, _DispatchingView):
 
     def _get_client_specific_claims(self, client_id, adapter):
         """ Get claims that are specific to the client. """
+        # If JWT scope enforcement is enabled, we need to sign tokens
+        # given to restricted application with a separate secret which
+        # other IDAs do not have access to. This prevents restricted
+        # applications from getting access to API endpoints available
+        # on other IDAs which have not yet been protected with the
+        # scope-related DRF permission classes. Once all endpoints have
+        # been protected we can remove this if/else and go back to using
+        # a single secret.
         if ENFORCE_JWT_SCOPES.is_enabled() and adapter.is_client_restricted(client_id):
             issuer_setting = 'RESTRICTED_APPLICATION_JWT_ISSUER'
         else:
