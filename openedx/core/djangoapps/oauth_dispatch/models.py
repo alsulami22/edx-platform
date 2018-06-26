@@ -116,7 +116,7 @@ class ApplicationOrganization(models.Model):
         Filter by relation_type if provided.
         """
         return [
-            r.organization.name for r in application.organizations.all() \
+            r.organization.name for r in application.organizations.all()
             if relation_type is None or r.relation_type == relation_type
         ]
 
