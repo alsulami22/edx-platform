@@ -14,6 +14,7 @@ from django.test import RequestFactory, TestCase, override_settings
 from oauth2_provider import models as dot_models
 from organizations.tests.factories import OrganizationFactory
 
+from openedx.core.djangoapps.oauth_dispatch.adapters import DOTAdapter
 from provider import constants
 from student.tests.factories import UserFactory
 from third_party_auth.tests.utils import ThirdPartyOAuthTestMixin, ThirdPartyOAuthTestMixinGoogle
@@ -263,7 +264,7 @@ class TestAccessTokenView(AccessTokenLoginMixin, mixins.AccessTokenMixin, _Dispa
             data['access_token'],
             self.user,
             scopes,
-            filters=[self.dot_app_org.to_jwt_filter_claim()]
+            filters=[DOTAdapter.FILTER_USER_ME, self.dot_app_org.to_jwt_filter_claim()]
         )
 
 
