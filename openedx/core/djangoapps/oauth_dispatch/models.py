@@ -105,7 +105,7 @@ class ApplicationOrganization(models.Model):
 
     class Meta:
         app_label = 'oauth_dispatch'
-        unique_together = ('application', 'organization', 'relation_type')
+        unique_together = ('application', 'relation_type', 'organization')
 
     @classmethod
     def get_related_org_names(cls, application, relation_type=None):
@@ -114,10 +114,10 @@ class ApplicationOrganization(models.Model):
 
         Filter by relation_type if provided.
         """
-        return [
-            r.organization.name for r in application.organizations.all()
-            if relation_type is None or r.relation_type == relation_type
-        ]
+        queryset = application.organizations.all()
+        if relation_type:
+            queryset = queryset.filter(relation_type=relation_type)
+        return [r.organization.name for r in queryset]
 
     def __unicode__(self):
         """
