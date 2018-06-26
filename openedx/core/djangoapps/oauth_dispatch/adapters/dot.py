@@ -93,6 +93,12 @@ class DOTAdapter(object):
         """
         application = self.get_client(client_id=client_id)
         filters = [org_relation.to_jwt_filter_claim() for org_relation in application.organizations.all()]
-        if application.authorization_grant_type == application.GRANT_CLIENT_CREDENTIALS:
+
+        # Allow applications configured with the client credentials grant type to access
+        # data for all users. This will allow clients to fetch data in bulk.
+        # Applications configured with all other grant types should only have access
+        # to data for the request user.
+        if application.authorization_grant_type != application.GRANT_CLIENT_CREDENTIALS:
             filters.append(self.FILTER_USER_ME)
+
         return filters
