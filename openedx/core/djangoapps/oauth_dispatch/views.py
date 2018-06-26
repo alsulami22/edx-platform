@@ -25,6 +25,7 @@ from openedx.core.lib.token_utils import JwtBuilder
 
 from . import adapters
 from .dot_overrides import views as dot_overrides_views
+from .toggles import ENFORCE_JWT_SCOPES
 
 
 class _DispatchingView(View):
@@ -139,7 +140,7 @@ class AccessTokenView(RatelimitMixin, _DispatchingView):
 
     def _get_client_specific_claims(self, client_id, adapter):
         """ Get claims that are specific to the client. """
-        if adapter.is_client_restricted(client_id):
+        if ENFORCE_JWT_SCOPES.is_enabled() and adapter.is_client_restricted(client_id):
             issuer_setting = 'RESTRICTED_APPLICATION_JWT_ISSUER'
         else:
             issuer_setting = 'DEFAULT_JWT_ISSUER'

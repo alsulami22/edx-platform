@@ -502,12 +502,13 @@ OAUTH_EXPIRE_PUBLIC_CLIENT_DAYS = 30
 
 ################################## DJANGO OAUTH TOOLKIT #######################################
 
+# Scope description strings are presented to the user
+# on the application authorization page. See
+# lms/templates/oauth2_provider/authorize.html for details.
 OAUTH2_DEFAULT_SCOPES = {
     'read': _('Read access'),
     'write': _('Write access'),
     'email': _('Know your email address'),
-    # conform profile scope message that is presented to end-user
-    # to lms/templates/provider/authorize.html. This may be revised later.
     'profile': _('Know your name and username'),
 }
 

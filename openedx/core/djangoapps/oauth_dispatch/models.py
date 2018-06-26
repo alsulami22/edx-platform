@@ -11,9 +11,8 @@ from oauth2_provider.settings import oauth2_settings
 from organizations.models import Organization
 from pytz import utc
 
+from openedx.core.djangoapps.oauth_dispatch.toggles import ENFORCE_JWT_SCOPES
 from openedx.core.djangoapps.request_cache import get_request_or_stub
-
-from .toggles import UNEXPIRED_RESTRICTED_APPLICATIONS
 
 
 class RestrictedApplication(models.Model):
@@ -40,7 +39,7 @@ class RestrictedApplication(models.Model):
 
     @classmethod
     def should_expire_access_token(cls, application):
-        set_token_expired = not UNEXPIRED_RESTRICTED_APPLICATIONS.is_enabled()
+        set_token_expired = not ENFORCE_JWT_SCOPES.is_enabled()
         jwt_not_requested = get_request_or_stub().POST.get('token_type', '').lower() != 'jwt'
         restricted_application = cls.objects.filter(application=application).exists()
         return restricted_application and (jwt_not_requested or set_token_expired)
